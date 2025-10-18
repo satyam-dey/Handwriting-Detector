@@ -5,9 +5,8 @@ import numpy as np
 import io
 import cv2
 
-# Use the /tmp directory, which is writable on Vercel
-# For local testing, we'll create a local tmp directory to simulate this
-UPLOAD_DIR = "/tmp/glyphs" if os.path.isdir('/tmp') else "tmp/glyphs"
+# MODIFICATION: Use the /tmp directory, which is writable on Vercel
+UPLOAD_DIR = "/tmp/glyphs"
 PAGE_WIDTH = 2480  # px ~ A4 at 300dpi
 PAGE_HEIGHT = 3508
 GLYPH_HEIGHT = 120  # normalized height of glyph images
@@ -15,13 +14,11 @@ H_SPACING = 10
 V_SPACING = 20
 LINE_MARGIN = 80
 
-# Create the temporary directory if it doesn't exist
+# MODIFICATION: Create the temporary directory
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# *** CRITICAL CHANGE FOR LOCAL EXECUTION ***
-# This tells Flask to look for the 'templates' folder in the parent directory
+# MODIFICATION: Point Flask to the correct template folder location
 app = Flask(__name__, template_folder='../templates')
-
 
 def normalize_glyph_image(pil_img, target_h=GLYPH_HEIGHT):
     img = pil_img.convert("L")
@@ -53,7 +50,6 @@ def normalize_glyph_image(pil_img, target_h=GLYPH_HEIGHT):
 def index():
     return render_template("index.html")
 
-# (All other routes like /upload_glyph, /render_pdf, etc., remain the same as the Vercel-ready version)
 @app.route("/upload_glyph", methods=["POST"])
 def upload_glyph():
     ch = request.form.get("char", "")
@@ -61,6 +57,7 @@ def upload_glyph():
     if not ch or not f:
         return jsonify({"ok":False, "error":"char or file missing"}), 400
     safe_name = ch
+    # MODIFICATION: Path points to the temporary directory
     filename = os.path.join(UPLOAD_DIR, f"{safe_name}.png")
     img = Image.open(f.stream)
     glyph = normalize_glyph_image(img)
@@ -91,7 +88,7 @@ def render_pdf():
     x, y, max_h_in_line = LINE_MARGIN, LINE_MARGIN, 0
 
     for ch in text:
-        if ch == "\\n":
+        if ch == "\n":
             x = LINE_MARGIN
             y += max_h_in_line + V_SPACING
             max_h_in_line = 0
@@ -115,9 +112,10 @@ def render_pdf():
         if y + max_h_in_line + LINE_MARGIN > PAGE_HEIGHT:
             break
 
+    # --- MAJOR MODIFICATION: SAVE PDF TO MEMORY AND SEND DIRECTLY ---
     pdf_buffer = io.BytesIO()
     page.convert("RGB").save(pdf_buffer, "PDF", resolution=300.0)
-    pdf_buffer.seek(0) 
+    pdf_buffer.seek(0) # Rewind the buffer to the beginning
 
     return send_file(
         pdf_buffer,
@@ -126,6 +124,4 @@ def render_pdf():
         mimetype="application/pdf"
     )
 
-# *** THIS PART MAKES IT RUNNABLE LOCALLY ***
-if __name__ == "__main__":
-    app.run(debug=True)
+# The /download route is no longer needed and has been removed.
