@@ -125,7 +125,7 @@
         background-color: var(--primary-hover);
         transform: translateY(-2px);
       }
-
+      
       .btn-secondary {
         background-color: #6c757d;
       }
@@ -145,7 +145,7 @@
         word-wrap: break-word;
         white-space: pre-wrap; /* Allows line breaks */
       }
-
+      
       #renderResult a {
         color: var(--primary-hover);
         font-weight: 600;
@@ -155,6 +155,7 @@
       #renderResult a:hover {
         text-decoration: underline;
       }
+
 
       /* --- Responsive Design for Mobile --- */
       @media (max-width: 900px) {
@@ -172,8 +173,7 @@
       <header>
         <h1>Handwriting to PDF Generator ✍️</h1>
         <p>
-          Upload images of your handwritten characters, then type text to
-          generate a PDF in your own handwriting.
+          Upload images of your handwritten characters, then type text to generate a PDF in your own handwriting.
         </p>
       </header>
 
@@ -183,67 +183,43 @@
           <form id="uploadForm">
             <div class="form-group">
               <label for="char">Character (single):</label>
-              <input
-                id="char"
-                required
-                maxlength="1"
-                class="form-control"
-                placeholder="e.g., A"
-              />
+              <input id="char" required maxlength="1" class="form-control" placeholder="e.g., A" />
             </div>
             <div class="form-group">
-              <label for="file">Character Image:</label>
-              <input
-                id="file"
-                type="file"
-                accept="image/*"
-                required
-                class="form-control"
-              />
+                <label for="file">Character Image:</label>
+                <input id="file" type="file" accept="image/*" required class="form-control" />
             </div>
             <button type="submit" class="btn">Upload Glyph</button>
           </form>
-          <div id="uploadResult" class="result-box" style="display: none"></div>
-          <hr
-            style="
-              border: none;
-              border-top: 1px solid var(--border-color);
-              margin: 2rem 0;
-            "
-          />
-          <button id="listGlyphsBtn" class="btn btn-secondary">
-            Show Stored Glyphs
-          </button>
-          <pre id="glyphList" style="display: none"></pre>
+          <div id="uploadResult" class="result-box" style="display: none;"></div>
+          <hr style="border: none; border-top: 1px solid var(--border-color); margin: 2rem 0;">
+          <button id="listGlyphsBtn" class="btn btn-secondary">Show Stored Glyphs</button>
+          <pre id="glyphList" style="display: none;"></pre>
         </section>
 
         <section class="card">
           <h2>2. Type & Export</h2>
           <div class="form-group">
-            <label for="textToRender">Your Text:</label>
-            <textarea
-              id="textToRender"
-              class="form-control"
-              rows="8"
-              placeholder="Type the text you want to convert here..."
-            ></textarea>
+              <label for="textToRender">Your Text:</label>
+              <textarea
+                id="textToRender"
+                class="form-control"
+                rows="8"
+                placeholder="Type the text you want to convert here..."
+              ></textarea>
           </div>
           <div class="form-group">
-            <label for="glyphSize">Glyph Height (in pixels):</label>
-            <input
-              id="glyphSize"
-              type="number"
-              value="120"
-              class="form-control"
-            />
+              <label for="glyphSize">Glyph Height (in pixels):</label>
+              <input id="glyphSize" type="number" value="120" class="form-control" />
           </div>
           <button id="renderBtn" class="btn">Generate PDF</button>
-          <div id="renderResult" class="result-box" style="display: none"></div>
+          <div id="renderResult" class="result-box" style="display: none;"></div>
         </section>
       </main>
     </div>
 
     <script>
+      // The JavaScript remains the same, but we'll enhance UX by showing/hiding result boxes
       const uploadResultEl = document.getElementById("uploadResult");
       const glyphListEl = document.getElementById("glyphList");
       const renderResultEl = document.getElementById("renderResult");
@@ -252,7 +228,7 @@
         .getElementById("uploadForm")
         .addEventListener("submit", async (e) => {
           e.preventDefault();
-          uploadResultEl.style.display = "block";
+          uploadResultEl.style.display = 'block';
           uploadResultEl.innerText = "Uploading...";
           const char = document.getElementById("char").value;
           const file = document.getElementById("file").files[0];
@@ -266,7 +242,8 @@
           });
           const j = await res.json();
           uploadResultEl.innerText = JSON.stringify(j, null, 2);
-          if (res.ok) {
+          // Clear form on success
+          if(res.ok) {
             document.getElementById("uploadForm").reset();
           }
         });
@@ -274,7 +251,7 @@
       document
         .getElementById("listGlyphsBtn")
         .addEventListener("click", async () => {
-          glyphListEl.style.display = "block";
+          glyphListEl.style.display = 'block';
           glyphListEl.innerText = "Loading...";
           const r = await fetch("/list_glyphs");
           const j = await r.json();
@@ -285,43 +262,25 @@
           }
         });
 
-      // --- MAJOR MODIFICATION: PDF DOWNLOAD LOGIC ---
       document
         .getElementById("renderBtn")
         .addEventListener("click", async () => {
-          renderResultEl.style.display = "block";
+          renderResultEl.style.display = 'block';
           renderResultEl.innerHTML = "Generating PDF...";
-
           const text = document.getElementById("textToRender").value;
           const glyphSize = parseInt(
             document.getElementById("glyphSize").value || "120",
             10
           );
-
           const res = await fetch("/render_pdf", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: text, font_size: glyphSize }),
           });
-
-          if (res.ok) {
-            // Get the PDF file data as a 'blob'
-            const blob = await res.blob();
-            // Create a temporary URL for the blob
-            const url = window.URL.createObjectURL(blob);
-            // Create a temporary link element to trigger the download
-            const a = document.createElement("a");
-            a.style.display = "none";
-            a.href = url;
-            a.download = "handwritten_output.pdf"; // The name for the downloaded file
-            document.body.appendChild(a);
-            a.click(); // Simulate a click to start the download
-            window.URL.revokeObjectURL(url); // Clean up the temporary URL
-            a.remove();
-            renderResultEl.innerHTML = `✅ Success! Your PDF has started downloading.`;
+          const j = await res.json();
+          if (j.ok) {
+            renderResultEl.innerHTML = `✅ Success! <a href="${j.pdf}" target="_blank">Click here to Download PDF</a>`;
           } else {
-            // If there was an error, show it
-            const j = await res.json();
             renderResultEl.innerText = `Error: ${JSON.stringify(j.error)}`;
           }
         });
