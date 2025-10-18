@@ -124,4 +124,4 @@ def render_pdf():
         mimetype="application/pdf"
     )
 
-# The /download route is no longer needed and has been removed.
+# MODIFICATION: The /download route is no longer needed and has been removed.
